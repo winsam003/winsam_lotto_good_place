@@ -3,13 +3,13 @@ import { initializeApp, getApps, getApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyD14Zxgtc70K3R-q5dhzCPsEt-fLsF6NKw",
-  authDomain: "winsam-lotto-good-place.firebaseapp.com",
-  projectId: "winsam-lotto-good-place",
-  storageBucket: "winsam-lotto-good-place.firebasestorage.app",
-  messagingSenderId: "725603058217",
-  appId: "1:725603058217:web:d022f8865f4f8a33385238",
-  measurementId: "G-QZ9TZ52KJ9",
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
 };
 
 // 앱이 이미 초기화되어 있으면 기존 앱을 쓰고, 아니면 새로 초기화
