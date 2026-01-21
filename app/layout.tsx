@@ -23,6 +23,8 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const kakaoKey = process.env.NEXT_PUBLIC_KAKAO_MAP_CLIENT_ID;
+
   return (
     <html lang="ko">
       <body
@@ -30,10 +32,13 @@ export default function RootLayout({
         suppressHydrationWarning={true}
       >
         {children}
-        <Script
-          src={`//dapi.kakao.com/v2/maps/sdk.js?appkey=${process.env.NEXT_PUBLIC_KAKAO_MAP_CLIENT_ID}&autoload=false&libraries=services`}
-          strategy="beforeInteractive"
-        />
+        {/* 키값이 존재할 때만 스크립트를 로드하도록 명시 */}
+        {kakaoKey && (
+          <Script
+            src={`//dapi.kakao.com/v2/maps/sdk.js?appkey=${kakaoKey}&autoload=false&libraries=services`}
+            strategy="beforeInteractive"
+          />
+        )}
       </body>
     </html>
   );
