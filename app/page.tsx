@@ -1,65 +1,90 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useState } from "react";
+
+export default function LottoMapPage() {
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <main className="relative flex h-screen w-full overflow-hidden bg-white">
+      {/* 1. 왼쪽 사이드바 */}
+      <aside
+        className={`relative z-10 flex flex-col bg-white shadow-xl transition-all duration-300 ease-in-out overflow-hidden ${
+          isSidebarOpen ? "w-96" : "w-0"
+        }`}
+      >
+        {/* 내부 컨텐츠가 찌그러지지 않도록 min-w-96 설정 */}
+        <div className="flex flex-col h-full min-w-[24rem] p-5">
+          <h1 className="text-xl font-extrabold text-blue-600 mb-6">
+            WinSam Lotto Good Place
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+
+          {/* 검색창 영역 */}
+          <div className="mb-6">
+            <input
+              type="text"
+              placeholder="지역구 또는 지점명 검색"
+              className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+          </div>
+
+          {/* 결과 리스트 영역 (스크롤 가능) */}
+          <div className="flex-1 overflow-y-auto pr-1">
+            <p className="text-sm text-gray-500 mb-3">내 주변 명당 목록</p>
+            <div className="space-y-4">
+              {[1, 2, 3, 4, 5, 6, 7, 8].map((item) => (
+                <div
+                  key={item}
+                  className="p-4 border border-gray-100 rounded-lg hover:bg-blue-50 cursor-pointer transition-colors shadow-sm"
+                >
+                  <div className="font-bold text-gray-800">
+                    럭키 복권방 (1등 12회)
+                  </div>
+                  <div className="text-sm text-gray-600">
+                    경기도 성남시 수정구...
+                  </div>
+                  <div className="mt-2 text-xs font-semibold text-red-500">
+                    최근 당첨: 1205회차
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
-      </main>
-    </div>
+
+        {/* 사이드바 접기/펴기 버튼 (aside 밖에 위치하도록 설정) */}
+      </aside>
+
+      {/* 사이드바 토글 버튼 (aside 영역 밖에서 항상 보이게) */}
+      <button
+        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+        className="absolute left-0 top-1/2 -translate-y-1/2 z-20 bg-white p-2 rounded-r-lg shadow-md border border-l-0 transition-all duration-300 ease-in-out"
+        style={{
+          transform: `translateY(-50%) translateX(${isSidebarOpen ? "384px" : "0px"})`,
+        }}
+      >
+        {isSidebarOpen ? "◀" : "▶"}
+      </button>
+
+      {/* 2. 오른쪽 지도 영역 */}
+      <section className="relative flex-1 bg-gray-50">
+        <div id="map" className="w-full h-full">
+          <div className="flex flex-col items-center justify-center h-full text-gray-400 gap-3">
+            <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+            카카오 지도를 불러오는 중...
+          </div>
+        </div>
+
+        {/* 지도 위 플로팅 버튼 */}
+        <div className="absolute right-5 bottom-5 z-20 flex flex-col gap-2">
+          <button
+            className="bg-white p-3 rounded-full shadow-lg hover:bg-gray-50 transition-all border text-xl"
+            title="내 위치"
+          >
+            📍
+          </button>
+        </div>
+      </section>
+    </main>
   );
 }
