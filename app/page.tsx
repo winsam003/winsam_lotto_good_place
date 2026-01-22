@@ -181,7 +181,7 @@ export default function LottoMapPage() {
                 ? stores.map((store) => (
                     <div
                       key={store.id}
-                      className="p-3 md:p-4 border border-gray-100 rounded-xl hover:bg-blue-50 cursor-pointer shadow-sm group"
+                      className="p-3 md:p-4 border border-gray-100 rounded-xl hover:bg-blue-50 cursor-pointer shadow-sm group bg-white"
                       onClick={() => {
                         map.panTo(
                           new (window as any).kakao.maps.LatLng(
@@ -192,12 +192,12 @@ export default function LottoMapPage() {
                         if (window.innerWidth < 768) setIsSidebarOpen(false);
                       }}
                     >
-                      <div className="flex justify-between items-start">
+                      <div className="flex justify-between items-start mb-2">
                         <div className="flex-1 min-w-0">
                           <div className="font-bold text-gray-800 text-sm truncate group-hover:text-blue-600">
                             {store.shopName}
                           </div>
-                          <div className="text-[10px] text-gray-400 mt-1 truncate">
+                          <div className="text-[10px] text-gray-400 mt-0.5 truncate">
                             {store.address}
                           </div>
                         </div>
@@ -209,6 +209,22 @@ export default function LottoMapPage() {
                           }`}
                         >
                           {store.rank}등
+                        </span>
+                      </div>
+
+                      {/* 추가된 회차 및 자동/수동 정보 */}
+                      <div className="flex items-center gap-2 mt-2 pt-2 border-t border-dotted border-gray-100">
+                        <span className="text-[10px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">
+                          {store.drwNo || "000"}회
+                        </span>
+                        <span
+                          className={`text-[10px] font-bold ${
+                            store.method === "자동"
+                              ? "text-green-600"
+                              : "text-purple-600"
+                          }`}
+                        >
+                          {store.method || "자동"}
                         </span>
                       </div>
                     </div>
