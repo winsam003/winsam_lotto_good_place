@@ -228,12 +228,11 @@ export default function LottoMapPage() {
       >
         {isSidebarOpen ? "◀" : "▶"}
       </button>
-
       <section className="relative flex-1 h-full">
         <div id="map" className="w-full h-full" />
 
-        {/* 중앙 검색 버튼: 모바일에서 하단 여백 확보 */}
-        <div className="absolute bottom-24 md:bottom-10 left-1/2 -translate-x-1/2 z-30 w-full px-10 max-w-xs md:max-w-none md:w-auto">
+        {/* 중앙 검색 버튼: [수정] md(PC)에서는 하단 고정, 모바일에서는 상단 주소창 근처로 이동 */}
+        <div className="absolute top-24 md:top-auto md:bottom-10 left-1/2 -translate-x-1/2 z-30 w-full px-10 max-w-xs md:max-w-none md:w-auto">
           <button
             onClick={handleSearchStores}
             disabled={isLoading || isZoomTooFar}
@@ -251,10 +250,9 @@ export default function LottoMapPage() {
           </button>
         </div>
 
-        {/* 우측 하단 컨트롤 섹션: 모바일에서 세로 배치 대신 더 작게 조정 */}
-        {/* 우측 하단 컨트롤 섹션 */}
+        {/* 우측 하단 컨트롤 섹션 (기본 구조 유지) */}
         <div className="absolute right-4 bottom-6 md:right-8 md:bottom-10 z-20 flex flex-col items-end gap-3 md:gap-4 max-w-[calc(100vw-32px)]">
-          {/* 1. 주소 검색창 (모바일에서는 버튼들 위로 배치하여 겹침 방지) */}
+          {/* 주소 검색창 */}
           <div className="flex items-center bg-white rounded-xl md:rounded-2xl shadow-2xl border p-1 md:p-2 w-full sm:w-80">
             <input
               type="text"
@@ -272,7 +270,7 @@ export default function LottoMapPage() {
             </button>
           </div>
 
-          {/* 2. 하단 버튼 그룹 (랭킹 & 내 위치) */}
+          {/* 하단 버튼 그룹 */}
           <div className="flex items-center gap-3">
             <Link
               href="/ranking"
