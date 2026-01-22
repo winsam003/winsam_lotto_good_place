@@ -2,7 +2,14 @@
 
 import { useState, useEffect, useRef } from "react";
 import { db } from "@/lib/firebase";
-import { collection, query, where, getDocs, limit } from "firebase/firestore";
+import {
+  collection,
+  query,
+  where,
+  getDocs,
+  limit,
+  orderBy,
+} from "firebase/firestore";
 import Link from "next/link";
 
 export default function LottoMapPage() {
@@ -53,13 +60,16 @@ export default function LottoMapPage() {
         lottoCol,
         where("lat", ">=", center.getLat()),
         where("lat", "<=", ne.getLat()),
-        limit(50),
+        orderBy("lat", "asc"), // 위쪽은 위도가 커지는 순서대로 (중심에서 가까운 순)
+        limit(25),
       );
+
       const qLower = query(
         lottoCol,
         where("lat", ">=", sw.getLat()),
         where("lat", "<", center.getLat()),
-        limit(50),
+        orderBy("lat", "desc"), // 아래쪽은 위도가 작아지는 순서대로 (중심에서 가까운 순)
+        limit(25),
       );
 
       const [upperSnap, lowerSnap] = await Promise.all([
