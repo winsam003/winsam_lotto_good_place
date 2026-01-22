@@ -219,12 +219,12 @@ export default function LottoMapPage() {
                         </span>
                         <span
                           className={`text-[10px] font-bold ${
-                            store.method === "자동"
+                            store.type === "자동"
                               ? "text-green-600"
                               : "text-purple-600"
                           }`}
                         >
-                          {store.method || "자동"}
+                          {store.type || "자동"}
                         </span>
                       </div>
                     </div>
