@@ -215,7 +215,7 @@ export default function LottoMapPage() {
                       {/* 추가된 회차 및 자동/수동 정보 */}
                       <div className="flex items-center gap-2 mt-2 pt-2 border-t border-dotted border-gray-100">
                         <span className="text-[10px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">
-                          {store.drwNo || "000"}회
+                          {store.drawNo || "000"}회
                         </span>
                         <span
                           className={`text-[10px] font-bold ${
