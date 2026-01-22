@@ -252,34 +252,38 @@ export default function LottoMapPage() {
         </div>
 
         {/* 우측 하단 컨트롤 섹션: 모바일에서 세로 배치 대신 더 작게 조정 */}
-        <div className="absolute right-4 bottom-6 md:right-8 md:bottom-10 z-20 flex flex-col items-end gap-2 md:gap-3 max-w-[calc(100vw-40px)]">
-          <Link
-            href="/ranking"
-            className="flex items-center gap-2 bg-white text-blue-600 px-4 py-3 md:px-6 md:py-4 rounded-xl md:rounded-2xl shadow-2xl font-bold border border-blue-100 text-xs md:text-sm"
-          >
-            🏆 <span className="uppercase italic">이번 회차 당첨지</span>
-          </Link>
+        {/* 우측 하단 컨트롤 섹션 */}
+        <div className="absolute right-4 bottom-6 md:right-8 md:bottom-10 z-20 flex flex-col items-end gap-3 md:gap-4 max-w-[calc(100vw-32px)]">
+          {/* 1. 주소 검색창 (모바일에서는 버튼들 위로 배치하여 겹침 방지) */}
+          <div className="flex items-center bg-white rounded-xl md:rounded-2xl shadow-2xl border p-1 md:p-2 w-full sm:w-80">
+            <input
+              type="text"
+              value={searchAddress}
+              onChange={(e) => setSearchAddress(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && searchLocation()}
+              placeholder="주소 입력"
+              className="flex-1 bg-transparent px-3 py-2 outline-none text-xs md:text-sm font-medium min-w-0"
+            />
+            <button
+              onClick={searchLocation}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg md:rounded-xl text-[10px] md:text-xs font-bold shrink-0 active:scale-95"
+            >
+              GO
+            </button>
+          </div>
 
-          <div className="flex items-center gap-2 w-full">
-            <div className="flex items-center bg-white rounded-xl md:rounded-2xl shadow-2xl border p-1 md:p-2 flex-1 md:w-72">
-              <input
-                type="text"
-                value={searchAddress}
-                onChange={(e) => setSearchAddress(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && searchLocation()}
-                placeholder="주소 입력"
-                className="flex-1 bg-transparent px-2 md:px-3 py-1 md:py-2 outline-none text-xs md:text-sm font-medium min-w-0"
-              />
-              <button
-                onClick={searchLocation}
-                className="bg-blue-600 text-white px-3 py-1.5 md:px-4 md:py-2 rounded-lg md:rounded-xl text-[10px] md:text-xs font-bold shrink-0"
-              >
-                GO
-              </button>
-            </div>
+          {/* 2. 하단 버튼 그룹 (랭킹 & 내 위치) */}
+          <div className="flex items-center gap-3">
+            <Link
+              href="/ranking"
+              className="flex items-center gap-2 bg-white text-blue-600 px-5 py-3 md:px-6 md:py-4 rounded-xl md:rounded-2xl shadow-2xl font-bold border border-blue-100 text-xs md:text-sm active:scale-95 transition-all"
+            >
+              🏆 <span className="uppercase italic">이번 회차</span>
+            </Link>
+
             <button
               onClick={moveToCurrentLocation}
-              className="bg-white p-3 md:p-5 rounded-xl md:rounded-2xl shadow-2xl border text-xl md:text-2xl active:scale-95 shrink-0"
+              className="bg-white p-4 md:p-5 rounded-xl md:rounded-2xl shadow-2xl border text-xl md:text-2xl active:scale-95 shrink-0 transition-all"
             >
               🎯
             </button>
