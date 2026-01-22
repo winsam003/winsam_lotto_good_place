@@ -53,13 +53,13 @@ export default function LottoMapPage() {
         lottoCol,
         where("lat", ">=", center.getLat()),
         where("lat", "<=", ne.getLat()),
-        limit(25),
+        limit(50),
       );
       const qLower = query(
         lottoCol,
         where("lat", ">=", sw.getLat()),
         where("lat", "<", center.getLat()),
-        limit(25),
+        limit(50),
       );
 
       const [upperSnap, lowerSnap] = await Promise.all([
