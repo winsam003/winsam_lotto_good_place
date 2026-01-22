@@ -17,6 +17,12 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "로또 명당 - WinSam Toolbox",
   description: "전국 1등 배출 로또 명당 찾기",
+  verification: {
+    google: "RNkeSZzWbR8T4Pp_OTNspdHciimBargpK1SBOpatEyY",
+  },
+  other: {
+    naver: "65a5af9b122c01021f27ce178ec32e29944d47ca",
+  },
 };
 
 export default function RootLayout({
