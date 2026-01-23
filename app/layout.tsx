@@ -46,6 +46,7 @@ export default function RootLayout({
             strategy="beforeInteractive"
           />
         )}
+      <Analytics />
       </body>
     </html>
   );
