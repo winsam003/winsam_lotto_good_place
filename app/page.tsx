@@ -21,6 +21,9 @@ export default function LottoMapPage() {
   const [searchAddress, setSearchAddress] = useState("");
   const [hasSearched, setHasSearched] = useState(false);
 
+  // 최신 회차 기준 설정 (현재 데이터가 1207회까지 있으므로)
+  const LATEST_DRAW = 1207;
+
   const markersMapRef = useRef<Map<string, any>>(new Map());
 
   const searchLocation = () => {
@@ -33,7 +36,6 @@ export default function LottoMapPage() {
         const coords = new kakao.maps.LatLng(result[0].y, result[0].x);
         map.panTo(coords);
         map.setLevel(3);
-        // 모바일 배려: 검색 후 사이드바 닫기 (선택 사항)
         if (window.innerWidth < 768) setIsSidebarOpen(false);
       } else {
         alert("주소를 찾을 수 없습니다.");
@@ -54,22 +56,22 @@ export default function LottoMapPage() {
 
     try {
       const { kakao } = window as any;
-      const lottoCol = collection(db, "lotto_winners");
+      const lottoCol = collection(db, "lotto_stores");
 
       const qUpper = query(
         lottoCol,
         where("lat", ">=", center.getLat()),
         where("lat", "<=", ne.getLat()),
-        orderBy("lat", "asc"), // 위쪽은 위도가 커지는 순서대로 (중심에서 가까운 순)
-        limit(25),
+        orderBy("lat", "asc"),
+        limit(40),
       );
 
       const qLower = query(
         lottoCol,
         where("lat", ">=", sw.getLat()),
         where("lat", "<", center.getLat()),
-        orderBy("lat", "desc"), // 아래쪽은 위도가 작아지는 순서대로 (중심에서 가까운 순)
-        limit(25),
+        orderBy("lat", "desc"),
+        limit(40),
       );
 
       const [upperSnap, lowerSnap] = await Promise.all([
@@ -88,18 +90,21 @@ export default function LottoMapPage() {
         }
       });
 
+      newFetched.sort((a, b) => (b.firstPrizeCount || 0) - (a.firstPrizeCount || 0));
+
       newFetched.forEach((store) => {
+        const isRecent = store.lastUpdatedDraw > (LATEST_DRAW - 100);
         const marker = new kakao.maps.Marker({
           map: map,
           position: new kakao.maps.LatLng(store.lat, store.lng),
         });
 
         const infowindow = new kakao.maps.InfoWindow({
-          content: `<div style="padding:10px; color:black; font-size:12px; width:160px;">
-            <div style="font-weight:bold; margin-bottom:4px;">${store.shopName}</div>
-            <div style="color:${store.rank === 1 ? "#e11d48" : "#2563eb"}; font-weight:bold;">
-              ${store.rank}등 당첨
-            </div>
+          content: `<div style="padding:10px; color:black; font-size:12px; width:160px; line-height:1.4;">
+            <div style="font-weight:bold; margin-bottom:4px; border-bottom:1px solid #eee; padding-bottom:4px;">${store.shopName}</div>
+            ${isRecent ? `<div style="color:#f59e0b; font-weight:bold; font-size:10px; margin-bottom:4px;">🔥 최근 100회 이내 당첨된 명당!</div>` : ""}
+            <div style="color:#e11d48; font-weight:bold;">1등: ${store.firstPrizeCount || 0}회</div>
+            <div style="color:#2563eb; font-weight:bold;">2등: ${store.secondPrizeCount || 0}회</div>
           </div>`,
           removable: true,
         });
@@ -139,7 +144,6 @@ export default function LottoMapPage() {
         kakao.maps.event.addListener(newMap, "zoom_changed", checkZoomLevel);
         kakao.maps.event.addListener(newMap, "idle", checkZoomLevel);
 
-        // 초기 로드 시 모바일이면 사이드바 닫아두기
         if (window.innerWidth < 768) setIsSidebarOpen(false);
       });
     }
@@ -160,87 +164,85 @@ export default function LottoMapPage() {
 
   return (
     <main className="relative flex h-screen w-full overflow-hidden bg-white text-black font-sans">
-      {/* 사이드바: 모바일에서는 absolute로 띄워 지도를 가리도록 설정 */}
       <aside
-        className={`absolute md:relative z-40 flex flex-col h-full bg-white shadow-2xl transition-all duration-300 ${
-          isSidebarOpen ? "w-[85%] md:w-96" : "w-0"
-        }`}
+        className={`absolute md:relative z-40 flex flex-col h-full bg-white shadow-2xl transition-all duration-300 ${isSidebarOpen ? "w-[85%] md:w-96" : "w-0"
+          }`}
       >
-        <div
-          className={`flex flex-col h-full p-5 ${!isSidebarOpen && "hidden"}`}
-        >
+        <div className={`flex flex-col h-full p-5 ${!isSidebarOpen && "hidden"}`}>
           <h1 className="text-lg md:text-xl font-extrabold text-blue-600 mb-6 italic text-center shrink-0">
             WinSam Lotto Map
           </h1>
           <div className="flex-1 overflow-y-auto pr-1">
             <p className="text-xs text-gray-400 mb-4 font-semibold border-b pb-2">
-              조회된 당첨 기록 ({stores.length}곳)
+              조회된 명당 ({stores.length}곳)
             </p>
             <div className="space-y-3">
               {stores.length > 0
-                ? stores.map((store) => (
+                ? stores.map((store) => {
+                  const isRecent = store.lastUpdatedDraw > (LATEST_DRAW - 100);
+                  return (
                     <div
                       key={store.id}
-                      className="p-3 md:p-4 border border-gray-100 rounded-xl hover:bg-blue-50 cursor-pointer shadow-sm group bg-white"
+                      className={`p-4 border rounded-2xl cursor-pointer shadow-sm group transition-all active:scale-[0.98] ${isRecent
+                        ? "bg-amber-50/50 border-amber-200 hover:bg-amber-100"
+                        : "bg-white border-gray-100 hover:bg-blue-50"
+                        }`}
                       onClick={() => {
-                        map.panTo(
-                          new (window as any).kakao.maps.LatLng(
-                            store.lat,
-                            store.lng,
-                          ),
-                        );
+                        map.panTo(new (window as any).kakao.maps.LatLng(store.lat, store.lng));
                         if (window.innerWidth < 768) setIsSidebarOpen(false);
                       }}
                     >
-                      <div className="flex justify-between items-start mb-2">
-                        <div className="flex-1 min-w-0">
-                          <div className="font-bold text-gray-800 text-sm truncate group-hover:text-blue-600">
-                            {store.shopName}
-                          </div>
-                          <div className="text-[10px] text-gray-400 mt-0.5 truncate">
-                            {store.address}
-                          </div>
+                      {/* 최근 당첨 태그 추가 */}
+                      {isRecent && (
+                        <div className="flex items-center gap-1 mb-2">
+                          <span className="text-[9px] font-black bg-amber-200 text-amber-700 px-2 py-0.5 rounded-full animate-pulse">
+                            🔥 최근 100회 이내 당첨된 명당
+                          </span>
                         </div>
-                        <span
-                          className={`ml-2 text-[10px] px-2 py-0.5 rounded font-black whitespace-nowrap ${
-                            store.rank === 1
-                              ? "bg-red-50 text-red-600 border border-red-100"
-                              : "bg-blue-50 text-blue-600 border border-blue-100"
-                          }`}
-                        >
-                          {store.rank}등
-                        </span>
+                      )}
+
+                      <div className="mb-3">
+                        <div className="font-bold text-gray-800 text-sm truncate group-hover:text-blue-600">
+                          {store.shopName}
+                        </div>
+                        <div className="text-[10px] text-gray-400 mt-1 truncate">
+                          📍 {store.address}
+                        </div>
                       </div>
 
-                      {/* 추가된 회차 및 자동/수동 정보 */}
-                      <div className="flex items-center gap-2 mt-2 pt-2 border-t border-dotted border-gray-100">
-                        <span className="text-[10px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">
-                          {store.drawNo || "000"}회
+                      <div className="flex items-center gap-2 bg-white/50 p-2 rounded-xl border border-gray-100/50">
+                        <div className="flex-1 flex flex-col items-center justify-center py-1">
+                          <span className="text-[8px] font-black text-red-400 uppercase">1등</span>
+                          <span className="text-sm font-black text-red-600">{store.firstPrizeCount || 0}</span>
+                        </div>
+                        <div className="w-[1px] h-4 bg-gray-200" />
+                        <div className="flex-1 flex flex-col items-center justify-center py-1">
+                          <span className="text-[8px] font-black text-blue-400 uppercase">2등</span>
+                          <span className="text-sm font-black text-blue-600">{store.secondPrizeCount || 0}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex justify-between items-center mt-3 px-1">
+                        <span className="text-[9px] font-bold text-gray-300">
+                          최근 당첨된 회차: {store.lastUpdatedDraw}회
                         </span>
-                        <span
-                          className={`text-[10px] font-bold ${
-                            store.type === "자동"
-                              ? "text-green-600"
-                              : "text-purple-600"
-                          }`}
-                        >
-                          {store.type || "자동"}
+                        <span className="text-[10px] text-blue-500 font-black">
+                          GO MAP →
                         </span>
                       </div>
                     </div>
-                  ))
-                : hasSearched &&
-                  !isLoading && (
-                    <div className="py-20 text-center text-gray-500 font-bold">
-                      명당이 없습니다. 지도를 옮겨보세요!
-                    </div>
-                  )}
+                  );
+                })
+                : hasSearched && !isLoading && (
+                  <div className="py-20 text-center text-gray-500 font-bold">
+                    명당이 없습니다. 지도를 옮겨보세요!
+                  </div>
+                )}
             </div>
           </div>
         </div>
       </aside>
 
-      {/* 사이드바 토글 버튼: 모바일 터치 대응을 위해 크기 키움 */}
       <button
         onClick={() => setIsSidebarOpen(!isSidebarOpen)}
         className="absolute left-0 top-1/2 -translate-y-1/2 z-50 bg-white p-3 md:p-2 rounded-r-lg shadow-md border"
@@ -254,31 +256,24 @@ export default function LottoMapPage() {
       >
         {isSidebarOpen ? "◀" : "▶"}
       </button>
+
       <section className="relative flex-1 h-full">
         <div id="map" className="w-full h-full" />
 
-        {/* 중앙 검색 버튼: [수정] md(PC)에서는 하단 고정, 모바일에서는 상단 주소창 근처로 이동 */}
         <div className="absolute top-24 md:top-auto md:bottom-10 left-1/2 -translate-x-1/2 z-30 w-full px-10 max-w-xs md:max-w-none md:w-auto">
           <button
             onClick={handleSearchStores}
             disabled={isLoading || isZoomTooFar}
-            className={`w-full md:w-auto px-6 md:px-10 py-3 md:py-4 rounded-full shadow-2xl font-black transition-all border-2 text-sm md:text-lg ${
-              isZoomTooFar
-                ? "bg-gray-200 text-gray-400 border-gray-300"
-                : "bg-blue-600 text-white border-blue-600 active:scale-95"
-            }`}
+            className={`w-full md:w-auto px-6 md:px-10 py-3 md:py-4 rounded-full shadow-2xl font-black transition-all border-2 text-sm md:text-lg ${isZoomTooFar
+              ? "bg-gray-200 text-gray-400 border-gray-300"
+              : "bg-blue-600 text-white border-blue-600 active:scale-95"
+              }`}
           >
-            {isLoading
-              ? "SEARCHING..."
-              : isZoomTooFar
-                ? "🔍 더 확대해주세요"
-                : "이 지역 명당 찾기"}
+            {isLoading ? "SEARCHING..." : isZoomTooFar ? "🔍 더 확대해주세요" : "이 지역 명당 찾기"}
           </button>
         </div>
 
-        {/* 우측 하단 컨트롤 섹션 (기본 구조 유지) */}
         <div className="absolute right-4 bottom-6 md:right-8 md:bottom-10 z-20 flex flex-col items-end gap-3 md:gap-4 max-w-[calc(100vw-32px)]">
-          {/* 주소 검색창 */}
           <div className="flex items-center bg-white rounded-xl md:rounded-2xl shadow-2xl border p-1 md:p-2 w-full sm:w-80">
             <input
               type="text"
@@ -296,13 +291,18 @@ export default function LottoMapPage() {
             </button>
           </div>
 
-          {/* 하단 버튼 그룹 */}
           <div className="flex items-center gap-3">
             <Link
               href="/ranking"
               className="flex items-center gap-2 bg-white text-blue-600 px-5 py-3 md:px-6 md:py-4 rounded-xl md:rounded-2xl shadow-2xl font-bold border border-blue-100 text-xs md:text-sm active:scale-95 transition-all"
             >
-              🏆 <span className="uppercase italic">이번 회차</span>
+              👑 <span className="uppercase italic">매장 랭킹</span>
+            </Link>
+            <Link
+              href="/last"
+              className="flex items-center gap-2 bg-white text-blue-600 px-5 py-3 md:px-6 md:py-4 rounded-xl md:rounded-2xl shadow-2xl font-bold border border-blue-100 text-xs md:text-sm active:scale-95 transition-all"
+            >
+              🍀 <span className="uppercase italic">이번 회차</span>
             </Link>
 
             <button
