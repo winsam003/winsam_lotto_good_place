@@ -16,7 +16,16 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "내주변 로또 명당 - WinSam Lotto Good Place",
-  description: "내 주변 로또 명당 찾기",
+  description: "현재 내 위치 기반 전국 로또 명당 정보를 지도에서 바로 확인하세요. 1등 당첨 빈도순 정렬, 최근 당첨 판매점 정보 등 가장 정확한 로또 명당 데이터를 제공합니다.",
+  keywords: ["로또 명당", "내주변 로또", "로또 1등 판매점", "로또 명당 지도", "전국 로또 명당", "로또 당첨 번호 확인"],
+  openGraph: {
+    title: "내 주변 로또 명당 - WinSam Lotto Good Place",
+    description: "지도 기반 실시간 로또 명당 찾기 서비스",
+    url: "https://lotto-good-place.winsam.xyz",
+    siteName: "WinSam Lotto Good Place",
+    locale: "ko_KR",
+    type: "website",
+  },
   verification: {
     google: "RNkeSZzWbR8T4Pp_OTNspdHciimBargpK1SBOpatEyY",
   },
@@ -46,7 +55,7 @@ export default function RootLayout({
             strategy="beforeInteractive"
           />
         )}
-      <Analytics />
+        <Analytics />
       </body>
     </html>
   );
