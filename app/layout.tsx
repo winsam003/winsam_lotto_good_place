@@ -48,6 +48,7 @@ export default function RootLayout({
         suppressHydrationWarning={true}
       >
         {children}
+        <Analytics />
         {/* 키값이 존재할 때만 스크립트를 로드하도록 명시 */}
         {kakaoKey && (
           <Script
