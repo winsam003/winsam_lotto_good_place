@@ -16,22 +16,31 @@ import {
 export const maxDuration = 60;
 
 export async function GET(request: Request) {
-    // 1. 보안 검증 (Bearer 비번 OR Vercel 시스템 호출 체크)
+    console.log("🚀 [Batch Start] API 호출됨");
+
     const authHeader = request.headers.get("authorization");
     const vercelCronHeader = request.headers.get("x-vercel-cron");
     const adminPassword = process.env.NEXT_PUBLIC_ADMIN_PASSWORD;
+
+    console.log("🔑 [Auth Check]", {
+        hasAuthHeader: !!authHeader,
+        isVercelCron: vercelCronHeader === "1",
+        envPasswordExists: !!adminPassword
+    });
 
     const isAuthorized = authHeader === `Bearer ${adminPassword}`;
     const isVercelSystem = vercelCronHeader === "1";
 
     if (!isAuthorized && !isVercelSystem) {
+        console.error("❌ [Auth Failed] 권한 없음");
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const logsCol = collection(db, "batch_logs");
 
     try {
-        // [STEP 1] DB에서 마지막 회차 조회
+        // [STEP 1] DB 조회 로그
+        console.log("📡 [Step 1] Firestore에서 마지막 회차 조회 중...");
         const q = query(collection(db, "lotto_winners"), orderBy("drawNo", "desc"), limit(1));
         const snap = await getDocs(q);
 
@@ -40,45 +49,52 @@ export async function GET(request: Request) {
             lastDrawNo = snap.docs[0].data().drawNo;
         }
         const targetDrawNo = lastDrawNo + 1;
+        console.log(`✅ [Step 1 완료] 현재 DB 마지막 회차: ${lastDrawNo} -> 타겟 회차: ${targetDrawNo}`);
 
-        // [STEP 2] 동행복권 데이터 가져오기 (타임아웃 적용)
+        // [STEP 2] 외부 API 호출 로그
         const url = `https://www.dhlottery.co.kr/wnprchsplcsrch/selectLtWnShp.do?srchWnShpRnk=all&srchLtEpsd=${targetDrawNo}&srchShpLctn=&_=${Date.now()}`;
+        console.log(`🌐 [Step 2] 동행복권 데이터 요청 시작: ${url}`);
 
-        // 네트워크 지연 시 10초 후 자동 중단 설정
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 10000);
 
         const response = await fetch(url, {
             signal: controller.signal,
-            cache: 'no-store' // 캐시 무시하고 항상 새 데이터 요청
+            cache: 'no-store',
+            headers: {
+                // 봇 차단 방지를 위한 User-Agent 필수 추가
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+            }
         });
 
         clearTimeout(timeoutId);
 
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        if (!response.ok) {
+            console.error(`❌ [Step 2 에러] HTTP status: ${response.status}`);
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
 
         const result = await response.json();
-        const winners = result.data.list;
+        const winners = result.data?.list;
+        console.log(`✅ [Step 2 완료] 받아온 데이터 개수: ${winners?.length || 0}개`);
 
-        // 데이터가 아직 없는 경우 (추첨 직후 등)
         if (!winners || winners.length === 0) {
-            const logRef = doc(logsCol);
-            await writeBatch(db).set(logRef, {
+            console.warn("⚠️ [데이터 없음] 아직 동행복권에 데이터가 업데이트되지 않았습니다.");
+            await writeBatch(db).set(doc(logsCol), {
                 status: "PENDING",
                 drawNo: targetDrawNo,
                 message: "데이터 미업데이트",
                 timestamp: serverTimestamp(),
             }).commit();
-
             return NextResponse.json({ success: false, message: "No data yet." });
         }
 
-        // [STEP 3] Batch 작업 시작
+        // [STEP 3] Batch 작업 로그
+        console.log("💾 [Step 3] Firestore Batch 작업 시작...");
         const batch = writeBatch(db);
         const storeMap = new Map();
 
         winners.forEach((item: any) => {
-            // 당첨 기록 저장
             const winnerDocId = `${targetDrawNo}_${item.ltShpId}_${item.rnum}`;
             const winnerRef = doc(db, "lotto_winners", winnerDocId);
             batch.set(winnerRef, {
@@ -92,10 +108,7 @@ export async function GET(request: Request) {
                 createdAt: new Date(),
             });
 
-            // 매장 ID 생성 및 통계 준비
-            const storeId = `${item.shpNm}_${item.shpAddr.replace(/\s/g, "")}`
-                .replace(/\//g, "_")
-                .replace(/\./g, "");
+            const storeId = `${item.shpNm}_${item.shpAddr.replace(/\s/g, "")}`.replace(/\//g, "_").replace(/\./g, "");
 
             if (!storeMap.has(storeId)) {
                 storeMap.set(storeId, {
@@ -107,7 +120,6 @@ export async function GET(request: Request) {
             if (item.wnShpRnk === 2) current.second += 1;
         });
 
-        // 매장 통계 합산 업데이트
         storeMap.forEach((val, id) => {
             const storeRef = doc(db, "lotto_stores", id);
             batch.set(storeRef, {
@@ -123,8 +135,7 @@ export async function GET(request: Request) {
         });
 
         // 성공 로그 기록
-        const successLogRef = doc(logsCol);
-        batch.set(successLogRef, {
+        batch.set(doc(logsCol), {
             status: "SUCCESS",
             drawNo: targetDrawNo,
             winnerCount: winners.length,
@@ -132,25 +143,27 @@ export async function GET(request: Request) {
         });
 
         await batch.commit();
+        console.log(`🎉 [모든 작업 완료] ${targetDrawNo}회차 업데이트 성공!`);
 
         return NextResponse.json({ success: true, drawNo: targetDrawNo });
 
     } catch (error: any) {
-        console.error("Batch Update Error:", error);
+        const errorMsg = error.name === 'AbortError' ? '네트워크 타임아웃(10초)' : error.message;
+        console.error("🔥 [최종 에러 발생]:", errorMsg);
 
-        // 에러 발생 시 로그 저장 시도
         try {
             const errBatch = writeBatch(db);
             errBatch.set(doc(logsCol), {
                 status: "FAILURE",
-                message: error.name === 'AbortError' ? '네트워크 타임아웃' : error.message,
+                message: errorMsg,
                 timestamp: serverTimestamp(),
             });
             await errBatch.commit();
+            console.log("📝 [에러 로그 저장 완료]");
         } catch (logErr) {
-            console.error("Logging failed:", logErr);
+            console.error("🚫 [에러 로그 저장 실패]:", logErr);
         }
 
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        return NextResponse.json({ error: errorMsg }, { status: 500 });
     }
 }
