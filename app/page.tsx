@@ -20,6 +20,7 @@ import {
   LoaderCircle,
   MapPin,
   MapPinned,
+  MessageSquareText,
   Search,
   Sparkles,
   Trophy,
@@ -830,13 +831,19 @@ export default function LottoMapPage() {
               href="/ranking"
               className="glass-panel inline-flex items-center gap-2 rounded-xl px-3.5 py-2.5 text-[11px] font-extrabold text-[#30394e] transition hover:-translate-y-0.5 hover:text-[#4f46e5] active:scale-95 md:rounded-2xl md:px-4 md:py-3 md:text-xs"
             >
-              <Trophy size={15} className="text-[#d18b23]" /> <span>매장 랭킹</span>
+              <Trophy size={15} className="text-[#d18b23]" /> <span className="max-[360px]:hidden">매장 랭킹</span>
             </Link>
             <Link
               href="/last"
               className="glass-panel inline-flex items-center gap-2 rounded-xl px-3.5 py-2.5 text-[11px] font-extrabold text-[#30394e] transition hover:-translate-y-0.5 hover:text-[#4f46e5] active:scale-95 md:rounded-2xl md:px-4 md:py-3 md:text-xs"
             >
-              <CalendarDays size={15} className="text-[#5b56d8]" /> <span>이번 회차</span>
+              <CalendarDays size={15} className="text-[#5b56d8]" /> <span className="max-[360px]:hidden">이번 회차</span>
+            </Link>
+            <Link
+              href="/board"
+              className="glass-panel inline-flex items-center gap-2 rounded-xl px-3.5 py-2.5 text-[11px] font-extrabold text-[#30394e] transition hover:-translate-y-0.5 hover:text-[#4f46e5] active:scale-95 md:rounded-2xl md:px-4 md:py-3 md:text-xs"
+            >
+              <MessageSquareText size={15} className="text-[#4f46e5]" /> <span className="max-[360px]:hidden">게시판</span>
             </Link>
 
             <button

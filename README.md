@@ -34,3 +34,30 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Board configuration
+
+The board API uses Firebase Admin so that notice management credentials never
+reach the browser bundle. Configure these variables in `.env.local` and in the
+Vercel Production environment:
+
+```text
+ADMIN_PASSWORD=your-private-admin-password
+FIREBASE_ADMIN_PROJECT_ID=your-firebase-project-id
+FIREBASE_ADMIN_CLIENT_EMAIL=firebase-adminsdk-...@....iam.gserviceaccount.com
+FIREBASE_ADMIN_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
+```
+
+Create a service-account key from Firebase Console > Project settings > Service
+accounts. Never prefix these variables with `NEXT_PUBLIC_` and never commit the
+private key.
+
+Deploy the Firestore indexes and rules separately from Vercel:
+
+```bash
+npx firebase-tools login
+npx firebase-tools deploy --only firestore:indexes,firestore:rules
+```
+
+The rules block direct browser access to `board_posts` and `board_notices`; the
+Next.js API accesses them through Firebase Admin.

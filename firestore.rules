@@ -1,0 +1,27 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 현재 클라이언트 지도·집계 기능을 유지한다.
+    match /lotto_winners/{document} {
+      allow read, write: if true;
+    }
+
+    match /lotto_stores/{document} {
+      allow read, write: if true;
+    }
+
+    match /batch_logs/{document} {
+      allow read, write: if true;
+    }
+
+    // 게시판은 Firebase Admin을 사용하는 Next.js API로만 접근한다.
+    match /board_posts/{document} {
+      allow read, write: if false;
+    }
+
+    match /board_notices/{document} {
+      allow read, write: if false;
+    }
+  }
+}
