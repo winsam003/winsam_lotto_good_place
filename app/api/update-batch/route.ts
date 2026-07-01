@@ -19,19 +19,16 @@ export async function GET(request: Request) {
     console.log("🚀 [Batch Start] API 호출됨");
 
     const authHeader = request.headers.get("authorization");
-    const vercelCronHeader = request.headers.get("x-vercel-cron");
-    const adminPassword = process.env.NEXT_PUBLIC_ADMIN_PASSWORD;
+    const cronSecret = process.env.CRON_SECRET;
 
     console.log("🔑 [Auth Check]", {
         hasAuthHeader: !!authHeader,
-        isVercelCron: vercelCronHeader === "1",
-        envPasswordExists: !!adminPassword
+        cronSecretExists: !!cronSecret,
     });
 
-    const isAuthorized = authHeader === `Bearer ${adminPassword}`;
-    const isVercelSystem = vercelCronHeader === "1";
+    const isAuthorized = !!cronSecret && authHeader === `Bearer ${cronSecret}`;
 
-    if (!isAuthorized && !isVercelSystem) {
+    if (!isAuthorized) {
         console.error("❌ [Auth Failed] 권한 없음");
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
