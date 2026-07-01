@@ -23,6 +23,7 @@ import {
   Search,
   Sparkles,
   Trophy,
+  X,
 } from "lucide-react";
 
 interface KakaoLatLng {
@@ -130,6 +131,16 @@ interface StoreCacheEntry {
   cachedAt: number;
 }
 
+type SearchSource = "current" | "place" | "area";
+
+interface SearchOrigin {
+  lat: number;
+  lng: number;
+  source: SearchSource;
+}
+
+type LocationAccess = "checking" | "granted" | "prompt" | "denied";
+
 const MAX_VISIBLE_STORES = 300;
 const STORE_CACHE_KEY = "lotto-map-store-cache-v1";
 const STORE_CACHE_TTL_MS = 2 * 60 * 60 * 1000;
@@ -186,6 +197,29 @@ const getDistanceSquared = (
   return latDiff * latDiff + lngDiff * lngDiff;
 };
 
+const getDistanceMeters = (
+  firstLat: number,
+  firstLng: number,
+  secondLat: number,
+  secondLng: number,
+) => {
+  const earthRadius = 6371000;
+  const toRadians = (degree: number) => (degree * Math.PI) / 180;
+  const latDelta = toRadians(secondLat - firstLat);
+  const lngDelta = toRadians(secondLng - firstLng);
+  const a =
+    Math.sin(latDelta / 2) ** 2 +
+    Math.cos(toRadians(firstLat)) *
+      Math.cos(toRadians(secondLat)) *
+      Math.sin(lngDelta / 2) ** 2;
+  return earthRadius * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+};
+
+const formatDistance = (distance: number) =>
+  distance < 1000
+    ? `${Math.max(10, Math.round(distance / 10) * 10)}m`
+    : `${(distance / 1000).toFixed(distance < 10000 ? 1 : 0)}km`;
+
 const escapeHtml = (value: unknown) =>
   String(value ?? "").replace(
     /[&<>'"]/g,
@@ -210,6 +244,10 @@ export default function LottoMapPage() {
   const [latestDrawNo, setLatestDrawNo] = useState<number | null>(null);
   const [isResultLimited, setIsResultLimited] = useState(false);
   const [searchError, setSearchError] = useState("");
+  const [locationAccess, setLocationAccess] =
+    useState<LocationAccess>("checking");
+  const [searchOrigin, setSearchOrigin] = useState<SearchOrigin | null>(null);
+  const [isSpotlightOpen, setIsSpotlightOpen] = useState(true);
 
   const mapRef = useRef<KakaoMap | null>(null);
   const latestDrawNoRef = useRef<number | null>(null);
@@ -219,6 +257,7 @@ export default function LottoMapPage() {
   const didHandleInitialLocationRef = useRef(false);
   const autoSearchTimerRef = useRef<number | null>(null);
   const storeCacheRef = useRef<StoreCacheEntry[] | null>(null);
+  const searchSourceRef = useRef<SearchSource>("area");
 
   const clearSearchResults = useCallback(() => {
     if (autoSearchTimerRef.current !== null) {
@@ -253,6 +292,12 @@ export default function LottoMapPage() {
     const sw = bounds.getSouthWest();
     const ne = bounds.getNorthEast();
     const center = currentMap.getCenter();
+    const currentSearchOrigin: SearchOrigin = {
+      lat: center.getLat(),
+      lng: center.getLng(),
+      source: searchSourceRef.current,
+    };
+    setSearchOrigin(currentSearchOrigin);
     const requestedBounds: MapBoundsSnapshot = {
       south: sw.getLat(),
       north: ne.getLat(),
@@ -351,6 +396,7 @@ export default function LottoMapPage() {
       const sortedStores = [...nearestStores].sort(
         (a, b) =>
           (b.firstPrizeCount ?? 0) - (a.firstPrizeCount ?? 0) ||
+          (b.secondPrizeCount ?? 0) - (a.secondPrizeCount ?? 0) ||
           getDistanceSquared(a, center.getLat(), center.getLng()) -
             getDistanceSquared(b, center.getLat(), center.getLng()),
       );
@@ -394,13 +440,14 @@ export default function LottoMapPage() {
   }, []);
 
   const moveToAndSearch = useCallback(
-    (lat: number, lng: number) => {
+    (lat: number, lng: number, source: SearchSource = "place") => {
       const currentMap = mapRef.current;
       if (!currentMap) return;
 
       clearSearchResults();
+      searchSourceRef.current = source;
       const coords = new window.kakao.maps.LatLng(lat, lng);
-      currentMap.setLevel(3);
+      currentMap.setLevel(source === "current" ? 5 : 3);
       currentMap.setCenter(coords);
       autoSearchTimerRef.current = window.setTimeout(() => {
         autoSearchTimerRef.current = null;
@@ -411,6 +458,27 @@ export default function LottoMapPage() {
     [clearSearchResults, handleSearchStores],
   );
 
+  const requestCurrentLocation = useCallback(() => {
+    if (!mapRef.current || !navigator.geolocation) {
+      setLocationAccess("denied");
+      return;
+    }
+
+    setLocationAccess("checking");
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setLocationAccess("granted");
+        moveToAndSearch(
+          position.coords.latitude,
+          position.coords.longitude,
+          "current",
+        );
+      },
+      () => setLocationAccess("denied"),
+      { enableHighAccuracy: false, timeout: 7000, maximumAge: 300000 },
+    );
+  }, [moveToAndSearch]);
+
   const searchLocation = () => {
     if (!mapRef.current || !searchAddress.trim()) return;
     const { kakao } = window;
@@ -419,7 +487,7 @@ export default function LottoMapPage() {
 
     const applySearchResult = (result: KakaoSearchResult[]) => {
       if (!result[0]) return false;
-      moveToAndSearch(Number(result[0].y), Number(result[0].x));
+      moveToAndSearch(Number(result[0].y), Number(result[0].x), "place");
       return true;
     };
 
@@ -503,19 +571,37 @@ export default function LottoMapPage() {
     const lat = Number(params.get("lat"));
     const lng = Number(params.get("lng"));
     if (Number.isFinite(lat) && Number.isFinite(lng) && lat && lng) {
-      moveToAndSearch(lat, lng);
+      moveToAndSearch(lat, lng, "place");
+      return;
     }
-  }, [map, moveToAndSearch]);
 
-  const moveToCurrentLocation = () => {
-    if (!mapRef.current) return;
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        moveToAndSearch(position.coords.latitude, position.coords.longitude);
-      },
-      () => alert("현재 위치를 확인할 수 없습니다. 위치 권한을 확인해 주세요."),
-    );
-  };
+    if (!navigator.permissions) {
+      setLocationAccess("prompt");
+      return;
+    }
+
+    void navigator.permissions
+      .query({ name: "geolocation" })
+      .then((permission) => {
+        if (permission.state === "granted") {
+          requestCurrentLocation();
+        } else {
+          setLocationAccess(permission.state);
+        }
+      })
+      .catch(() => setLocationAccess("prompt"));
+  }, [map, moveToAndSearch, requestCurrentLocation]);
+
+  const featuredStore = stores[0];
+  const featuredDistance =
+    featuredStore && searchOrigin
+      ? getDistanceMeters(
+          searchOrigin.lat,
+          searchOrigin.lng,
+          featuredStore.lat,
+          featuredStore.lng,
+        )
+      : null;
 
   return (
     <main className="relative flex h-screen w-full overflow-hidden bg-[#edf0f7] font-sans text-[#172033]">
@@ -652,9 +738,57 @@ export default function LottoMapPage() {
       <section className="relative flex-1 h-full">
         <div id="map" className="w-full h-full" />
 
-        <div className="absolute left-1/2 top-24 z-30 w-full max-w-xs -translate-x-1/2 px-5 md:bottom-8 md:top-auto md:w-auto md:max-w-none md:px-0">
+        {isSpotlightOpen && featuredStore && featuredDistance !== null && (
+          <div className="glass-panel absolute bottom-4 left-1/2 z-30 w-[calc(100%-24px)] max-w-[370px] -translate-x-1/2 animate-enter rounded-[1.5rem] p-4 md:bottom-6 md:left-6 md:translate-x-0 md:p-5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="flex size-8 items-center justify-center rounded-xl bg-[#fff1d8] text-[#c47a16]"><Trophy size={15} /></span>
+                <div>
+                  <p className="eyebrow">{searchOrigin?.source === "current" ? "Near me" : "Top pick"}</p>
+                  <p className="text-[11px] font-extrabold text-[#697389]">{searchOrigin?.source === "current" ? "내 주변 1등 명당" : "이 지역 1등 명당"}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2"><span className="rounded-lg bg-[#202942] px-2.5 py-1 text-[10px] font-black text-white">1위</span><button onClick={() => setIsSpotlightOpen(false)} aria-label="추천 카드 닫기" className="flex size-7 items-center justify-center rounded-lg bg-[#f1f2f6] text-[#7d8698] transition hover:bg-[#e7e9f0] hover:text-[#30394e]"><X size={14} /></button></div>
+            </div>
+            <div className="mt-4">
+              <h2 className="truncate text-xl font-black tracking-[-0.04em] text-[#202942]">{featuredStore.shopName}</h2>
+              <p className="mt-1.5 flex items-center gap-1 truncate text-[10px] font-medium text-[#969daf]"><MapPin size={11} /> {featuredStore.address}</p>
+            </div>
+            <div className="mt-4 grid grid-cols-3 gap-2">
+              <div className="rounded-xl bg-[#fff0ed] px-3 py-2.5"><span className="block text-[9px] font-extrabold text-[#d87868]">1등 배출</span><strong className="mt-0.5 block text-base font-black text-[#e35e49]">{featuredStore.firstPrizeCount ?? 0}회</strong></div>
+              <div className="rounded-xl bg-[#edf3ff] px-3 py-2.5"><span className="block text-[9px] font-extrabold text-[#6e89ba]">2등 배출</span><strong className="mt-0.5 block text-base font-black text-[#4771bd]">{featuredStore.secondPrizeCount ?? 0}회</strong></div>
+              <div className="rounded-xl bg-[#f1f2f6] px-3 py-2.5"><span className="block text-[9px] font-extrabold text-[#858d9e]">거리</span><strong className="mt-0.5 block text-base font-black text-[#525c72]">{formatDistance(featuredDistance)}</strong></div>
+            </div>
+            <div className="mt-3">
+              <button onClick={() => map?.panTo(new window.kakao.maps.LatLng(featuredStore.lat, featuredStore.lng))} className="w-full rounded-xl bg-[#4f46e5] px-3 py-2.5 text-xs font-extrabold text-white transition hover:bg-[#4338ca]">지도에서 보기</button>
+            </div>
+          </div>
+        )}
+
+        {isSpotlightOpen && !featuredStore && !hasSearched && (
+          <div className="glass-panel absolute bottom-4 left-1/2 z-30 w-[calc(100%-24px)] max-w-[370px] -translate-x-1/2 animate-enter rounded-[1.5rem] p-5 md:bottom-6 md:left-6 md:translate-x-0">
+            <button onClick={() => setIsSpotlightOpen(false)} aria-label="주변 명당 안내 닫기" className="absolute right-4 top-4 flex size-7 items-center justify-center rounded-lg bg-[#f1f2f6] text-[#7d8698] transition hover:bg-[#e7e9f0] hover:text-[#30394e]"><X size={14} /></button>
+            <div className="flex items-start gap-3 pr-7"><span className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-[#eef0ff] text-[#4f46e5]"><MapPinned size={19} /></span><div><p className="eyebrow">Discover nearby</p><h2 className="mt-1 text-lg font-black tracking-[-0.03em] text-[#202942]">내 주변 명당을 바로 찾아보세요</h2><p className="mt-1.5 text-[11px] font-medium leading-5 text-[#7e8799]">가까운 판매점 중 1등 당첨을 가장 많이 배출한 곳을 먼저 보여드려요.</p></div></div>
+            {locationAccess === "checking" ? (
+              <div className="mt-4 flex items-center justify-center gap-2 rounded-xl bg-[#f2f3f7] py-3 text-xs font-bold text-[#7e8799]"><LoaderCircle size={15} className="animate-spin" /> 위치 권한 확인 중...</div>
+            ) : locationAccess === "denied" ? (
+              <div className="mt-4 rounded-xl bg-[#fff7e8] px-4 py-3 text-center text-[11px] font-bold leading-5 text-[#9a6a21]">위치 권한이 꺼져 있습니다. 위 검색창에서 주소나 장소명을 검색해 주세요.</div>
+            ) : (
+              <button onClick={requestCurrentLocation} className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#4f46e5] py-3 text-xs font-extrabold text-white transition hover:bg-[#4338ca] active:scale-[0.98]"><Crosshair size={15} /> 내 주변 명당 보기</button>
+            )}
+          </div>
+        )}
+
+        {!isSpotlightOpen && (
+          <button onClick={() => setIsSpotlightOpen(true)} className="glass-panel absolute bottom-4 left-3 z-30 inline-flex items-center gap-2 rounded-xl px-3.5 py-2.5 text-[11px] font-extrabold text-[#3f4960] transition hover:-translate-y-0.5 hover:text-[#4f46e5] md:bottom-6 md:left-6"><Sparkles size={14} className="text-[#4f46e5]" /> 주변 추천 보기</button>
+        )}
+
+        <div className="absolute left-1/2 top-24 z-30 w-full max-w-xs -translate-x-1/2 px-5 md:bottom-6 md:left-auto md:right-6 md:top-auto md:w-auto md:max-w-none md:translate-x-0 md:px-0">
           <button
-            onClick={() => void handleSearchStores()}
+            onClick={() => {
+              searchSourceRef.current = "area";
+              void handleSearchStores();
+            }}
             disabled={isLoading || isZoomTooFar}
             className={`inline-flex w-full items-center justify-center gap-2 rounded-2xl border px-6 py-3.5 text-sm font-extrabold shadow-[0_14px_32px_rgba(34,43,72,0.2)] backdrop-blur transition md:w-auto md:px-7 ${isZoomTooFar
               ? "cursor-not-allowed border-white/70 bg-white/90 text-[#9ca3b3]"
@@ -706,7 +840,7 @@ export default function LottoMapPage() {
             </Link>
 
             <button
-              onClick={moveToCurrentLocation}
+              onClick={requestCurrentLocation}
               aria-label="현재 위치로 이동"
               className="glass-panel flex size-10 shrink-0 items-center justify-center rounded-xl text-[#4f46e5] transition hover:-translate-y-0.5 hover:bg-white active:scale-95 md:size-11 md:rounded-2xl"
             >
