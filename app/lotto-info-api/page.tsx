@@ -4,6 +4,18 @@ import { useState } from "react";
 import { db } from "@/lib/firebase";
 import { doc, writeBatch } from "firebase/firestore";
 import Link from "next/link";
+import { ArrowLeft, DatabaseZap, LockKeyhole } from "lucide-react";
+
+interface LottoWinnerApiItem {
+  ltShpId: string;
+  rnum: number;
+  shpNm: string | null;
+  shpAddr: string | null;
+  wnShpRnk: number;
+  atmtPsvYnTxt: string | null;
+  shpLat: number;
+  shpLot: number;
+}
 
 export default function LottoTestPage() {
   const [loading, setLoading] = useState(false);
@@ -55,7 +67,7 @@ export default function LottoTestPage() {
 
         if (winners && winners.length > 0) {
           const batch = writeBatch(db);
-          winners.forEach((item: any) => {
+          winners.forEach((item: LottoWinnerApiItem) => {
             const docId = `${i}_${item.ltShpId}_${item.rnum}`;
             const docRef = doc(db, "lotto_winners", docId);
             batch.set(docRef, {
@@ -84,36 +96,32 @@ export default function LottoTestPage() {
   };
 
   return (
-    <main className="min-h-screen bg-gray-50 flex items-center justify-center p-4 md:p-10 font-sans text-black">
-      <div className="w-full max-w-md bg-white rounded-[2rem] shadow-xl p-8 md:p-12 border border-gray-100">
+    <main className="page-canvas soft-grid flex min-h-screen items-center justify-center p-4 md:p-10">
+      <div className="surface-card w-full max-w-md animate-enter rounded-[2rem] p-7 md:p-10">
         <Link
           href="/"
-          className="text-blue-500 text-sm font-bold mb-6 inline-block"
+          className="mb-7 inline-flex items-center gap-2 text-xs font-extrabold text-[#68738a] transition hover:text-[#4f46e5]"
         >
-          ← 메인으로
+          <ArrowLeft size={15} /> 메인으로
         </Link>
 
-        <h1 className="text-xl md:text-2xl font-black mb-2 text-gray-800">
-          로또 데이터 수집기 🛠️
-        </h1>
+        <div className="mb-8 flex items-center gap-3"><span className="flex size-11 items-center justify-center rounded-2xl bg-[#eef0ff] text-[#4f46e5]"><DatabaseZap size={20} /></span><div><p className="eyebrow">Admin tool</p><h1 className="mt-0.5 text-2xl font-black tracking-[-0.04em] text-[#172033]">로또 데이터 수집</h1></div></div>
 
         {!isAdmin ? (
           /* 비밀번호 입력 화면 */
-          <div className="mt-10 space-y-4">
-            <p className="text-sm text-gray-500 font-bold ml-1">
-              ADMIN PASSWORD
-            </p>
+          <div className="mt-6 space-y-4">
+            <p className="ml-1 flex items-center gap-2 text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#8f97a8]"><LockKeyhole size={13} /> Admin password</p>
             <input
               type="password"
               value={inputPassword}
               onChange={(e) => setInputPassword(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleAdminAuth()}
               placeholder="비밀번호를 입력하세요"
-              className="w-full border-2 border-gray-100 p-4 rounded-2xl font-bold focus:border-blue-500 outline-none transition-all"
+              className="focus-field w-full rounded-2xl border border-[#e3e5ee] bg-[#fafbfc] p-4 font-bold outline-none"
             />
             <button
               onClick={handleAdminAuth}
-              className="w-full py-4 rounded-2xl bg-blue-600 text-white font-black shadow-lg"
+              className="w-full rounded-2xl bg-[#4f46e5] py-4 text-sm font-extrabold text-white shadow-lg transition hover:bg-[#4338ca] active:scale-[0.98]"
             >
               로그인
             </button>
@@ -121,7 +129,7 @@ export default function LottoTestPage() {
         ) : (
           /* 실제 수집기 화면 */
           <div className="mt-8">
-            <div className="bg-green-50 text-green-600 p-3 rounded-xl text-center text-[10px] font-bold mb-6">
+            <div className="mb-6 rounded-xl border border-emerald-100 bg-emerald-50 p-3 text-center text-[10px] font-bold text-emerald-600">
               ✅ 관리자 인증됨
             </div>
 
@@ -135,7 +143,7 @@ export default function LottoTestPage() {
                     type="number"
                     value={startDraw}
                     onChange={(e) => setStartDraw(Number(e.target.value))}
-                    className="w-full border-2 border-gray-100 p-4 rounded-2xl text-center font-bold focus:border-red-500 outline-none transition-all"
+                    className="focus-field w-full rounded-2xl border border-[#e3e5ee] bg-[#fafbfc] p-4 text-center font-bold outline-none"
                     disabled={loading}
                   />
                 </div>
@@ -148,14 +156,14 @@ export default function LottoTestPage() {
                     type="number"
                     value={endDraw}
                     onChange={(e) => setEndDraw(Number(e.target.value))}
-                    className="w-full border-2 border-gray-100 p-4 rounded-2xl text-center font-bold focus:border-red-500 outline-none transition-all"
+                    className="focus-field w-full rounded-2xl border border-[#e3e5ee] bg-[#fafbfc] p-4 text-center font-bold outline-none"
                     disabled={loading}
                   />
                 </div>
               </div>
 
               {loading && (
-                <div className="bg-blue-50 text-blue-600 p-4 rounded-2xl text-center text-sm font-bold animate-pulse">
+                <div className="animate-pulse rounded-2xl border border-[#dfe2fb] bg-[#f1f2ff] p-4 text-center text-sm font-bold text-[#5651c9]">
                   🚀 현재 {currentDraw}회차 수집 중...
                 </div>
               )}
@@ -167,7 +175,7 @@ export default function LottoTestPage() {
               className={`w-full py-5 rounded-2xl text-white font-black shadow-lg transition-all active:scale-95 ${
                 loading
                   ? "bg-gray-300 cursor-not-allowed"
-                  : "bg-red-500 hover:bg-red-600"
+                  : "bg-[#4f46e5] hover:bg-[#4338ca]"
               }`}
             >
               {loading ? "DATA COLLECTING..." : "데이터 수집 시작"}

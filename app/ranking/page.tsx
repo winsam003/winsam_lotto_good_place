@@ -5,6 +5,7 @@ import { db } from "@/lib/firebase";
 import { collection, query, orderBy, limit, getDocs } from "firebase/firestore";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { ArrowLeft, ChevronRight, MapPin, Search, Trophy } from "lucide-react";
 
 // [추가] 타입 에러 방지를 위한 인터페이스 정의
 interface LottoStore {
@@ -36,7 +37,7 @@ export default function RankingPage() {
         );
 
         const snap = await getDocs(q);
-        let results = snap.docs.map((doc) => ({
+        const results = snap.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
         })) as LottoStore[]; // [수정] 타입 단언으로 에러 해결
@@ -50,7 +51,7 @@ export default function RankingPage() {
 
         setAllWinners(results);
         setFilteredWinners(results);
-      } catch (err: any) {
+      } catch (err) {
         console.error("데이터 로드 실패:", err);
       } finally {
         setIsLoading(false);
@@ -86,103 +87,65 @@ export default function RankingPage() {
   };
 
   return (
-    <main className="min-h-screen bg-gray-50 py-6 md:py-10 px-4 text-black font-sans">
-      <div className="max-w-4xl mx-auto">
-        <div className="flex flex-col md:flex-row justify-between items-center md:items-end mb-8 gap-6">
-          <div className="text-center md:text-left">
-            <h1 className="text-2xl md:text-3xl font-black text-blue-600 tracking-tight">🏆 역대 로또 명당 TOP 100</h1>
-            <p className="text-sm md:text-base text-gray-500 mt-2 font-medium">전국에서 1등 당첨을 가장 많이 배출한 매장 순위입니다.</p>
+    <main className="page-canvas soft-grid px-4 py-7 md:px-6 md:py-12">
+      <div className="mx-auto max-w-5xl animate-enter">
+        <Link href="/" className="mb-7 inline-flex items-center gap-2 text-xs font-extrabold text-[#68738a] transition hover:text-[#4f46e5]">
+          <ArrowLeft size={15} /> 지도로 돌아가기
+        </Link>
+
+        <header className="mb-8 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+          <div>
+            <div className="mb-3 flex items-center gap-2">
+              <span className="flex size-8 items-center justify-center rounded-xl bg-[#fff1d8] text-[#c47a16]"><Trophy size={16} /></span>
+              <p className="eyebrow">All-time ranking</p>
+            </div>
+            <h1 className="text-3xl font-black tracking-[-0.05em] text-[#172033] md:text-5xl">역대 로또 명당</h1>
+            <p className="mt-3 max-w-xl text-sm font-medium leading-6 text-[#737d91]">전국에서 1등 당첨을 가장 많이 배출한 판매점 100곳을 보여드려요.</p>
           </div>
-          <Link href="/" className="w-full md:w-auto text-center text-sm font-bold text-blue-500 hover:bg-blue-50 px-6 py-3 rounded-2xl border border-blue-100 bg-white shadow-sm active:scale-95 transition-all">
-            ← 지도로 돌아가기
-          </Link>
+          <div className="rounded-2xl border border-[#e2e4ef] bg-white/80 px-5 py-3 shadow-sm backdrop-blur">
+            <span className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#9aa1b1]">Loaded stores</span>
+            <strong className="ml-3 text-lg font-black text-[#4f46e5]">{allWinners.length}</strong>
+          </div>
+        </header>
+
+        <div className="glass-panel mb-5 flex items-center rounded-2xl px-4 py-1">
+          <Search size={18} className="shrink-0 text-[#9299aa]" />
+          <input type="text" value={keyword} onChange={(e) => setKeyword(e.target.value)} placeholder="동네 또는 판매점 이름으로 검색" className="focus-field w-full border-0 bg-transparent px-3 py-3.5 text-sm font-semibold outline-none placeholder:text-[#a4aaba]" />
         </div>
 
-        <div className="mb-6 relative">
-          <span className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
-          <input
-            type="text"
-            value={keyword}
-            onChange={(e) => setKeyword(e.target.value)}
-            placeholder="동네 또는 판매점 이름으로 검색"
-            className="w-full pl-12 pr-6 py-4 rounded-2xl border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none shadow-sm transition-all text-sm md:text-base"
-          />
-        </div>
-
-        <div className="bg-white rounded-[1.5rem] md:rounded-[2.5rem] shadow-2xl shadow-blue-100/40 overflow-hidden border border-gray-100">
+        <section className="surface-card overflow-hidden rounded-[1.5rem] md:rounded-[2rem]">
           {!isLoading ? (
             <>
-              <div className="hidden md:block overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="bg-gray-50/50 border-b border-gray-100">
-                      <th className="py-6 px-6 font-bold text-gray-400 text-xs text-center w-24">순위</th>
-                      <th className="py-6 px-6 font-bold text-gray-400 text-xs">판매점 정보</th>
-                      <th className="py-6 px-6 font-bold text-gray-400 text-xs text-center">1등 배출</th>
-                      <th className="py-6 px-6 font-bold text-gray-400 text-xs text-center">2등 배출</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-50">
+              <div className="hidden overflow-x-auto md:block">
+                <table className="w-full border-collapse text-left">
+                  <thead><tr className="border-b border-[#eceef4] bg-[#fafbfc] text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#969daf]"><th className="w-24 px-6 py-5 text-center">순위</th><th className="px-6 py-5">판매점</th><th className="px-6 py-5 text-center">1등 배출</th><th className="px-6 py-5 text-center">2등 배출</th><th className="w-12" /></tr></thead>
+                  <tbody className="divide-y divide-[#f0f1f5]">
                     {filteredWinners.slice(0, 100).map((store, index) => (
-                      <tr
-                        key={store.id}
-                        className={`transition-colors group cursor-pointer ${index < 3 ? 'bg-amber-50/20' : 'hover:bg-blue-50/40'}`}
-                        onClick={() => goToStoreOnMap(store)}
-                      >
-                        <td className="py-6 px-6 text-center">
-                          <span className={`text-xl font-black ${index < 3 ? "scale-110 inline-block" : "text-gray-300"}`}>{getRankDisplay(index)}</span>
-                        </td>
-                        <td className="py-6 px-6">
-                          <div className="font-extrabold text-gray-800 text-base group-hover:text-blue-600 transition-colors">{store.shopName}</div>
-                          <div className="text-[11px] text-gray-400 mt-1">📍 {store.address}</div>
-                        </td>
-                        <td className="py-6 px-6 text-center">
-                          <span className="bg-red-50 text-red-600 px-4 py-1.5 rounded-full font-black text-sm border border-red-100">{store.firstPrizeCount || 0}회</span>
-                        </td>
-                        <td className="py-6 px-6 text-center">
-                          <span className="bg-blue-50 text-blue-600 px-4 py-1.5 rounded-full font-black text-sm border border-blue-100">{store.secondPrizeCount || 0}회</span>
-                        </td>
+                      <tr key={store.id} className="group cursor-pointer transition hover:bg-[#f8f8ff]" onClick={() => goToStoreOnMap(store)}>
+                        <td className="px-6 py-5 text-center"><span className={`inline-flex size-10 items-center justify-center rounded-xl font-black ${index < 3 ? "bg-[#fff7e7] text-xl" : "bg-[#f3f4f8] text-sm text-[#7d8699]"}`}>{getRankDisplay(index)}</span></td>
+                        <td className="px-6 py-5"><p className="font-extrabold text-[#293248] transition group-hover:text-[#4f46e5]">{store.shopName}</p><p className="mt-1.5 flex items-center gap-1 text-[11px] font-medium text-[#969daf]"><MapPin size={12} /> {store.address}</p></td>
+                        <td className="px-6 py-5 text-center"><span className="inline-flex min-w-16 justify-center rounded-xl bg-[#fff0ed] px-3 py-2 text-sm font-black text-[#e35e49]">{store.firstPrizeCount || 0}회</span></td>
+                        <td className="px-6 py-5 text-center"><span className="inline-flex min-w-16 justify-center rounded-xl bg-[#edf3ff] px-3 py-2 text-sm font-black text-[#4771bd]">{store.secondPrizeCount || 0}회</span></td>
+                        <td className="pr-5 text-[#b0b5c1]"><ChevronRight size={17} /></td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
 
-              <div className="block md:hidden">
+              <div className="grid gap-3 p-3 md:hidden">
                 {filteredWinners.slice(0, 100).map((store, index) => (
-                  <div
-                    key={store.id}
-                    className={`p-6 border-b border-gray-50 active:bg-blue-50 cursor-pointer ${index < 3 ? 'bg-amber-50/30' : ''}`}
-                    onClick={() => goToStoreOnMap(store)}
-                  >
-                    <div className="flex gap-4 items-start mb-4">
-                      <span className="text-2xl font-black shrink-0">{getRankDisplay(index)}</span>
-                      <div className="min-w-0">
-                        <h3 className="font-extrabold text-gray-800 text-base mb-1 truncate">{store.shopName}</h3>
-                        <p className="text-[11px] text-gray-400 leading-tight line-clamp-2">📍 {store.address}</p>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="bg-white border border-red-100 py-3 rounded-2xl text-center shadow-sm">
-                        <span className="block text-[9px] font-black text-red-400 mb-0.5">1ST PRIZE</span>
-                        <span className="text-red-600 font-black text-base">{store.firstPrizeCount || 0}회</span>
-                      </div>
-                      <div className="bg-white border border-blue-100 py-3 rounded-2xl text-center shadow-sm">
-                        <span className="block text-[9px] font-black text-blue-400 mb-0.5">2ND PRIZE</span>
-                        <span className="text-blue-600 font-black text-base">{store.secondPrizeCount || 0}회</span>
-                      </div>
-                    </div>
-                  </div>
+                  <button key={store.id} className="lift-card w-full rounded-2xl border border-[#e8eaf1] bg-white p-4 text-left" onClick={() => goToStoreOnMap(store)}>
+                    <div className="flex items-start gap-3"><span className={`flex size-10 shrink-0 items-center justify-center rounded-xl font-black ${index < 3 ? "bg-[#fff5df] text-xl" : "bg-[#f3f4f8] text-sm text-[#70798d]"}`}>{getRankDisplay(index)}</span><div className="min-w-0 flex-1"><p className="truncate text-sm font-extrabold text-[#293248]">{store.shopName}</p><p className="mt-1 flex items-start gap-1 text-[10px] leading-4 text-[#969daf]"><MapPin size={11} className="mt-0.5 shrink-0" /> {store.address}</p></div><ChevronRight size={16} className="mt-2 text-[#b1b6c3]" /></div>
+                    <div className="mt-4 grid grid-cols-2 gap-2"><div className="rounded-xl bg-[#fff0ed] px-3 py-2.5"><span className="block text-[9px] font-extrabold text-[#d87868]">1등 배출</span><strong className="mt-0.5 block text-base font-black text-[#e35e49]">{store.firstPrizeCount || 0}회</strong></div><div className="rounded-xl bg-[#edf3ff] px-3 py-2.5"><span className="block text-[9px] font-extrabold text-[#6e89ba]">2등 배출</span><strong className="mt-0.5 block text-base font-black text-[#4771bd]">{store.secondPrizeCount || 0}회</strong></div></div>
+                  </button>
                 ))}
               </div>
             </>
           ) : (
-            <div className="py-24 text-center">
-              <div className="inline-block w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-4"></div>
-              <p className="text-blue-600 font-black animate-pulse tracking-widest text-xs uppercase">Ranking Loading...</p>
-            </div>
+            <div className="py-24 text-center"><div className="mx-auto mb-4 size-8 animate-spin rounded-full border-4 border-[#dedff4] border-t-[#4f46e5]" /><p className="text-xs font-extrabold tracking-[0.14em] text-[#6761d4]">RANKING LOADING</p></div>
           )}
-        </div>
+        </section>
       </div>
     </main>
   );

@@ -13,6 +13,7 @@ import {
     serverTimestamp,
 } from "firebase/firestore";
 import Link from "next/link";
+import { AlertTriangle, ArrowLeft, Database } from "lucide-react";
 
 export default function LottoRefinePage() {
     const [loading, setLoading] = useState(false);
@@ -118,35 +119,35 @@ export default function LottoRefinePage() {
     };
 
     return (
-        <main className="min-h-screen bg-gray-50 flex items-center justify-center p-10 text-black">
-            <div className="w-full max-w-md bg-white p-8 rounded-[2.5rem] shadow-2xl border border-gray-100">
-                <Link href="/" className="text-blue-500 text-sm font-bold mb-4 inline-block">← 메인</Link>
-                <h1 className="text-2xl font-black mb-2 italic text-blue-600">Lotto Refiner v2 🛠️</h1>
-                <p className="text-[10px] text-gray-400 font-bold mb-8 uppercase tracking-widest">Store Aggregation System</p>
+        <main className="page-canvas soft-grid flex min-h-screen items-center justify-center p-4 md:p-10">
+            <div className="surface-card w-full max-w-md animate-enter rounded-[2rem] p-7 md:p-9">
+                <Link href="/" className="mb-7 inline-flex items-center gap-2 text-xs font-extrabold text-[#68738a] transition hover:text-[#4f46e5]"><ArrowLeft size={15} /> 메인으로</Link>
+                <div className="mb-7 flex items-center gap-3"><span className="flex size-11 items-center justify-center rounded-2xl bg-[#eef0ff] text-[#4f46e5]"><Database size={20} /></span><div><p className="eyebrow">Admin tool</p><h1 className="mt-0.5 text-2xl font-black tracking-[-0.04em] text-[#172033]">매장 데이터 정제</h1></div></div>
+                <div className="mb-7 flex gap-2 rounded-2xl border border-[#f1d8a9] bg-[#fff9ec] p-3.5 text-[11px] font-semibold leading-5 text-[#9a671d]"><AlertTriangle size={16} className="mt-0.5 shrink-0" />같은 회차를 다시 실행하면 집계 횟수가 중복 증가합니다.</div>
 
                 <div className="space-y-6 mb-10">
                     <div className="flex gap-4">
                         <div className="flex-1">
-                            <label className="block text-[10px] font-black text-gray-400 mb-2 ml-1">START</label>
+                            <label className="mb-2 ml-1 block text-[10px] font-black uppercase tracking-[0.12em] text-[#8f97a8]">Start draw</label>
                             <input
                                 type="number" value={startDraw}
                                 onChange={e => setStartDraw(Number(e.target.value))}
-                                className="w-full border-2 border-gray-100 p-4 rounded-2xl text-center font-bold focus:border-blue-500 outline-none transition-all"
+                                className="focus-field w-full rounded-2xl border border-[#e3e5ee] bg-[#fafbfc] p-4 text-center font-extrabold outline-none"
                             />
                         </div>
                         <div className="flex-1">
-                            <label className="block text-[10px] font-black text-gray-400 mb-2 ml-1">END</label>
+                            <label className="mb-2 ml-1 block text-[10px] font-black uppercase tracking-[0.12em] text-[#8f97a8]">End draw</label>
                             <input
                                 type="number" value={endDraw}
                                 onChange={e => setEndDraw(Number(e.target.value))}
-                                className="w-full border-2 border-gray-100 p-4 rounded-2xl text-center font-bold focus:border-blue-500 outline-none transition-all"
+                                className="focus-field w-full rounded-2xl border border-[#e3e5ee] bg-[#fafbfc] p-4 text-center font-extrabold outline-none"
                             />
                         </div>
                     </div>
                 </div>
 
                 {status && (
-                    <div className="mb-6 p-4 bg-blue-50 text-blue-600 rounded-2xl text-xs font-bold text-center animate-pulse border border-blue-100">
+                    <div className="mb-6 animate-pulse rounded-2xl border border-[#dfe2fb] bg-[#f1f2ff] p-4 text-center text-xs font-bold text-[#5651c9]">
                         {status}
                     </div>
                 )}
@@ -154,7 +155,7 @@ export default function LottoRefinePage() {
                 <button
                     onClick={startRefine}
                     disabled={loading}
-                    className={`w-full py-5 rounded-2xl text-white font-black shadow-lg transition-all active:scale-95 ${loading ? "bg-gray-300" : "bg-blue-600 hover:bg-blue-700"
+                    className={`w-full rounded-2xl py-4 text-sm font-extrabold text-white shadow-lg transition-all active:scale-[0.98] ${loading ? "bg-[#c4c8d2]" : "bg-[#4f46e5] hover:bg-[#4338ca]"
                         }`}
                 >
                     {loading ? "PROCESSING..." : "정제 프로세스 시작"}
