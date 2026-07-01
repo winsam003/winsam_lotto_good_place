@@ -783,7 +783,7 @@ export default function LottoMapPage() {
           <button onClick={() => setIsSpotlightOpen(true)} className="glass-panel absolute bottom-4 left-3 z-30 inline-flex items-center gap-2 rounded-xl px-3.5 py-2.5 text-[11px] font-extrabold text-[#3f4960] transition hover:-translate-y-0.5 hover:text-[#4f46e5] md:bottom-6 md:left-6"><Sparkles size={14} className="text-[#4f46e5]" /> 주변 추천 보기</button>
         )}
 
-        <div className="absolute left-1/2 top-24 z-30 w-full max-w-xs -translate-x-1/2 px-5 md:bottom-6 md:left-auto md:right-6 md:top-auto md:w-auto md:max-w-none md:translate-x-0 md:px-0">
+        <div className="absolute left-1/2 top-[7.75rem] z-30 w-full max-w-xs -translate-x-1/2 px-5 md:bottom-6 md:left-auto md:right-6 md:top-auto md:w-auto md:max-w-none md:translate-x-0 md:px-0">
           <button
             onClick={() => {
               searchSourceRef.current = "area";
@@ -805,7 +805,7 @@ export default function LottoMapPage() {
           </button>
         </div>
 
-        <div className="absolute right-3 top-3 z-20 flex w-[calc(100vw-24px)] max-w-sm flex-col items-end gap-3 md:right-6 md:top-6 md:w-auto md:max-w-none">
+        <div className="absolute right-3 top-3 z-40 flex w-[calc(100vw-24px)] max-w-sm flex-col items-end gap-3 md:right-6 md:top-6 md:w-auto md:max-w-none">
           <div className="glass-panel flex w-full items-center rounded-2xl p-1.5 md:w-[360px]">
             <Search size={17} className="ml-3 shrink-0 text-[#8a92a5]" />
             <input
